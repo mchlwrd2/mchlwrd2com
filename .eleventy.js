@@ -50,7 +50,7 @@ eleventyConfig.addGlobalData("lastUpdated", () => {
   return {
     dir: {
       input: "src",
-      output: "_site",
+      output: "docs",
       includes: "_includes",
       layouts: "_includes/layouts"
     }
