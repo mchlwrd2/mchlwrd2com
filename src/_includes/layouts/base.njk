@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - mchlwrd2 </title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <header>
+      <a href="/"> </a>
+    </header>
+<!-- title can go above in the header -->
+    <div class="main-layout-wrapper">
+      {% include "navigation.njk" %}
+
+      <main>
+        {{ content | safe }}
+      </main>
+    </div>
+    
+    <footer>
+  <p>&copy; 2025 Mike</p>
+  
+  <p style="font-size: 0.8rem; color: #666;">
+    Site updated: {{ lastUpdated }}
+  </p>
+    </footer>
+  </body>
+</html>

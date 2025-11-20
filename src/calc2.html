@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Payoff Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Prevent pull-to-refresh on mobile for app-like feel */
+            overscroll-behavior-y: none; 
+        }
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white min-h-screen flex flex-col">
+
+    <!-- App Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10 px-4 py-4 flex justify-between items-center">
+        <h1 class="text-lg font-bold tracking-tight">Payoff Calculator</h1>
+        <div class="text-xs font-medium px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded">Mobile Edition</div>
+    </header>
+
+    <!-- Main Content - Scrollable -->
+    <main class="flex-grow p-4 space-y-5 pb-32"> <!-- Padding bottom for fixed button -->
+        
+        <!-- Input Group -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 space-y-4">
+            
+            <!-- Purchase Amount -->
+            <div>
+                <label for="purchaseAmount" class="block text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-1">Balance ($)</label>
+                <input type="number" id="purchaseAmount" value="5000" class="block w-full bg-gray-50 dark:bg-gray-700 border-0 rounded-lg text-2xl font-bold p-3 focus:ring-2 focus:ring-indigo-500 text-gray-900 dark:text-white" placeholder="0.00">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Payoff Time -->
+                <div>
+                    <label for="payoffMonths" class="block text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-1">Months</label>
+                    <input type="number" id="payoffMonths" value="24" class="block w-full bg-gray-50 dark:bg-gray-700 border-0 rounded-lg text-xl font-bold p-3 focus:ring-2 focus:ring-indigo-500 text-gray-900 dark:text-white">
+                </div>
+                <!-- APR -->
+                <div>
+                    <label for="apr" class="block text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-1">APR (%)</label>
+                    <input type="number" id="apr" value="21.5" step="0.1" class="block w-full bg-gray-50 dark:bg-gray-700 border-0 rounded-lg text-xl font-bold p-3 focus:ring-2 focus:ring-indigo-500 text-gray-900 dark:text-white">
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Card (Hidden initially) -->
+        <div id="results" class="hidden space-y-5">
+            
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-indigo-600 rounded-xl p-4 text-white shadow-lg">
+                    <p class="text-xs opacity-80 font-medium uppercase">Monthly Payment</p>
+                    <p id="monthlyPayment" class="text-2xl font-bold mt-1">-</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase">Total Interest</p>
+                    <p id="totalInterest" class="text-2xl font-bold text-red-500 mt-1">-</p>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4">Payoff Timeline</h3>
+                <div class="relative h-64 w-full">
+                    <canvas id="payoffChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Box -->
+        <div id="messageBox" class="hidden bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <!-- Warning Icon -->
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-red-700 dark:text-red-200" id="messageText"></p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Floating Action Button Area -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-t border-gray-200 dark:border-gray-800">
+        <button id="calculateBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform duration-150 flex justify-center items-center">
+            Calculate Plan
+        </button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const calculateBtn = document.getElementById('calculateBtn');
+            const resultsDiv = document.getElementById('results');
+            const monthlyPaymentEl = document.getElementById('monthlyPayment');
+            const totalInterestEl = document.getElementById('totalInterest');
+            const purchaseAmountEl = document.getElementById('purchaseAmount');
+            const payoffMonthsEl = document.getElementById('payoffMonths');
+            const aprEl = document.getElementById('apr');
+            const messageBox = document.getElementById('messageBox');
+            const messageText = document.getElementById('messageText');
+
+            let payoffChart = null;
+
+            // Trigger calculation on load if defaults are present
+            // setTimeout(calculateLoan, 500);
+
+            calculateBtn.addEventListener('click', calculateLoan);
+
+            function calculateLoan() {
+                const P = parseFloat(purchaseAmountEl.value);
+                const n = parseInt(payoffMonthsEl.value);
+                const apr = parseFloat(aprEl.value);
+                
+                if (isNaN(P) || P <= 0 || isNaN(n) || n <= 0 || isNaN(apr) || apr < 0) {
+                    showMessage("Please check your inputs.");
+                    resultsDiv.classList.add('hidden');
+                    return;
+                }
+                hideMessage();
+
+                const annualRate = apr / 100;
+                const r = annualRate / 12;
+                
+                let monthlyPayment;
+                if (r === 0) {
+                    monthlyPayment = P / n;
+                } else {
+                    monthlyPayment = P * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                }
+
+                let balance = P;
+                let cumulativeInterest = 0;
+                const balanceData = [P];
+                const interestData = [0]; 
+                const labels = ['Start'];
+
+                // Optimize graph data for mobile (don't show every single label if there are many months)
+                const step = n > 24 ? Math.ceil(n / 12) : 1;
+
+                for (let i = 1; i <= n; i++) {
+                    const interestPaid = balance * r;
+                    cumulativeInterest += interestPaid;
+                    
+                    const principalPaid = monthlyPayment - interestPaid;
+                    balance -= principalPaid;
+                    
+                    balanceData.push(balance > 0 ? balance : 0); 
+                    interestData.push(cumulativeInterest);
+                    
+                    // Simpler labels for mobile
+                    labels.push(i); 
+                }
+
+                monthlyPaymentEl.textContent = `$${monthlyPayment.toFixed(2)}`;
+                totalInterestEl.textContent = `$${cumulativeInterest.toFixed(2)}`;
+                
+                resultsDiv.classList.remove('hidden');
+                
+                // Smooth scroll to results
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                renderChart(labels, balanceData, interestData);
+            }
+
+            function renderChart(labels, balanceData, interestData) {
+                const ctx = document.getElementById('payoffChart').getContext('2d');
+                
+                if (payoffChart) {
+                    payoffChart.destroy();
+                }
+
+                const formatAxisLabel = (value) => {
+                    if (value >= 1e6) return (value / 1e6).toFixed(0) + 'M';
+                    if (value >= 1e3) return (value / 1e3).toFixed(0) + 'k';
+                    return value;
+                };
+
+                payoffChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                        {
+                            type: 'line',
+                            label: 'Balance',
+                            data: balanceData,
+                            borderColor: '#4F46E5', // Indigo 600
+                            backgroundColor: 'rgba(79, 70, 229, 0.05)',
+                            borderWidth: 3,
+                            pointRadius: 0, // Hide points for cleaner mobile view
+                            fill: true,
+                            tension: 0.3, // Smoother curve
+                            yAxisID: 'y',
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Interest',
+                            data: interestData,
+                            backgroundColor: '#FCA5A5', // Red 300
+                            borderRadius: 2,
+                            yAxisID: 'y1',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false, // Critical for mobile height control
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                align: 'end',
+                                labels: {
+                                    boxWidth: 10,
+                                    usePointStyle: true,
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                                padding: 12,
+                                titleFont: { size: 13 },
+                                bodyFont: { size: 13 },
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { 
+                                    maxTicksLimit: 6, // Limit x-axis labels on small screens
+                                    font: { size: 10 }
+                                } 
+                            },
+                            y: {
+                                position: 'left',
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)',
+                                    drawBorder: false,
+                                },
+                                ticks: {
+                                    callback: formatAxisLabel,
+                                    font: { size: 10 },
+                                    padding: 0
+                                }
+                            },
+                            y1: {
+                                position: 'right',
+                                beginAtZero: true,
+                                grid: { display: false },
+                                ticks: {
+                                    callback: formatAxisLabel,
+                                    font: { size: 10 },
+                                    padding: 0,
+                                    color: '#EF4444' // Match interest color
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function showMessage(message) {
+                messageText.textContent = message;
+                messageBox.classList.remove('hidden');
+                messageBox.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            function hideMessage() {
+                messageBox.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

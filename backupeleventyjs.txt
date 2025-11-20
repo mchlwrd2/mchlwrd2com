@@ -1,0 +1,42 @@
+// ... at the top
+const eleventyNavigationPlugin = require("@11ty/eleventy-navigation");
+
+module.exports = function(eleventyConfig) {
+  
+  eleventyConfig.addPlugin(eleventyNavigationPlugin);
+  eleventyConfig.addPassthroughCopy("src/css");
+  
+  // Updated "posts" collection (looks for "posts" tag)
+  eleventyConfig.addCollection("posts", function(collectionApi) {
+    return collectionApi.getFilteredByTag("posts").reverse();
+  });
+
+module.exports = function(eleventyConfig) {
+
+  // This path is correct because "documents" is at the root
+eleventyConfig.addPassthroughCopy({ "src/documents": "documents" });
+
+  // ... other config
+return {
+    dir: {
+      input: "src"
+    }
+  };
+};
+  
+  // Updated "work" collection (looks for "work" tag)
+  eleventyConfig.addCollection("work", function(collectionApi) {
+    return collectionApi.getFilteredByTag("work").reverse();
+  });
+
+  // ... your 'dir' settings ...
+  return {
+    dir: {
+      input: "src",
+      output: "_site",
+      includes: "_includes",
+      layouts: "_includes/layouts"
+    }
+  };
+};
+

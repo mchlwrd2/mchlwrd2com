@@ -1,0 +1,5 @@
+npx @11ty/eleventy - rebuild under _site
+
+zip file (anything to be uploaded)
+
+upload to public_html on File Manager

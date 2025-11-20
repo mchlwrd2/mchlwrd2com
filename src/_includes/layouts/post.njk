@@ -1,0 +1,16 @@
+---
+layout: base.njk
+---
+<article>
+  <h1>{{ title }}</h1>
+  
+  {# This checks if you added a date to your front matter #}
+  {% if date %}
+    {#<p>Published on: <time datetime="{{ date | isoDate }}">{{ date | readableDate }}</time></p>#}
+  {% endif %}
+
+  {{ content | safe }}
+
+  {% include "related.njk" %}
+
+</article>

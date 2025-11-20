@@ -1,0 +1,189 @@
+/*
+ * Main Layout
+ * This creates the two-column layout with nav on left, content on right
+ */
+
+.main-layout-wrapper {
+  display: flex;
+  min-height: calc(100vh - 120px); /* Adjust based on your header/footer height */
+}
+
+/* * 1. Navigation Sidebar (Left Side)
+ * (This styles the <nav> element) 
+ */
+nav {
+  /* Set a fixed width for the nav bar */
+  flex-basis: 220px; 
+  flex-shrink: 0;        /* Prevent the nav from shrinking */
+  padding: 1rem;         /* Add some spacing inside the nav */
+  background-color: #f5f5f5; /* Optional: adds visual separation */
+  border-right: 1px solid #ddd; /* Optional: adds a border between nav and content */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* changed */
+  
+  /* NEW: Animation settings for collapse */
+  transition: flex-basis 0.3s ease, padding 0.3s ease;
+  overflow: hidden; /* Hides content when shrunk */
+  white-space: nowrap; /* Prevents text wrapping */
+}
+
+/* * NEW: Navigation Collapsed State
+ */
+nav.collapsed {
+  flex-basis: 60px; /* Shrink width */
+}
+
+/* Hide links and social icons when collapsed */
+nav.collapsed .nav-links,
+nav.collapsed .social-links {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* * NEW: Toggle Button 
+ */
+#menu-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  width: 100%;
+  color: #333;
+  
+  /* Flexbox settings for the SVG */
+  display: flex; 
+  align-items: center;        /* Vertically center the icon */
+  justify-content: flex-start; /* Horizontally align to the LEFT */
+  
+  /* Adjust this padding if the icon is too close to the left edge */
+  padding-left: 0; 
+  height: 40px; 
+}
+
+#menu-toggle svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* * 2. Main Content Area (Right Side)
+ * (This styles the <main> element)
+ */
+main {
+  flex-grow: 1;          /* Allow the main content to grow and fill the remaining space */
+  padding: 2rem;         /* Add some spacing inside the content area */
+  max-width: 1200px;     /* Optional: prevents content from getting too wide */
+}
+
+/* * Vertical Nav Links 
+ * (This styles the <a> links inside the nav)
+ */
+nav a {
+  display: block;        /* This makes the links stack vertically */
+  padding: 12px 16px;
+  margin-bottom: 4px;    /* Space between links */
+  text-decoration: none;
+  color: #333;
+  border-radius: 4px;    /* Optional: rounded corners */
+  transition: background-color 0.2s ease; /* Smooth hover effect */
+}
+
+nav a:hover {
+  background-color: #e0e0e0;
+}
+
+nav a.active {
+  font-weight: bold;
+  background-color: #d0d0d0;
+  color: #000;
+}
+/* Apply Roboto as the default font for the entire page */
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Ensure headings use the bold weight if you selected it in the embed code */
+h1, h2, h3, h4 {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 700; 
+}
+
+/* * Social Links at Bottom of Nav
+ */
+.social-links {
+  display: flex;
+  gap: 12px;
+  padding-top: 1rem;
+  margin-top: auto;
+  border-top: 1px solid #ddd;
+  justify-content: center; /* Center the icons horizontally */
+  transition: opacity 0.2s ease; /* Fade transition */
+}
+
+.social-links a {
+  padding: 8px;
+  margin: 0;
+  border-radius: 4px;
+  color: #333;
+  transition: all 0.2s ease;
+  display: inline-flex; /* Keeps icons side by side */
+}
+
+.social-links a:hover {
+  background-color: #e0e0e0;
+  color: #0077b5; /* LinkedIn blue - will apply to both */
+}
+
+.social-links svg {
+  display: block;
+}
+
+/* PREVENT ANIMATION ON LOAD */
+.preload-transitions * {
+  transition: none !important;
+}
+
+/* =========================
+   MOBILE RESPONSIVENESS
+   ========================= */
+@media (max-width: 768px) {
+
+  /* 1. Fix Layout Calculation */
+  /* This prevents "width: 100%" + "padding" from causing horizontal scrolling */
+  * {
+    box-sizing: border-box; 
+  }
+
+  .main-layout-wrapper {
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* 2. Navigation Styles */
+  nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 1000;
+    background-color: #f5f5f5;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    
+    /* FIX: Ensure it doesn't get too wide initially */
+    width: 250px; 
+  }
+
+  /* 3. Explicit Collapsed Width for Mobile */
+  /* "flex-basis" is ignored on absolute elements, so we use "width" */
+  nav.collapsed {
+    width: 70px; 
+  }
+
+  /* 4. Push Content to the Right */
+  main {
+    /* FIX: Add padding equal to the collapsed nav width + extra space */
+    padding-left: 90px; 
+    width: 100%;
+  }
+}

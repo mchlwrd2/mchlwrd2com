@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Card Payoff Graphing Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 space-y-6">
+        
+        <header class="text-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Credit Card Payoff Calculator</h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">Visualize your balance and the total interest you pay over time.</p>
+        </header>
+
+        <!-- Input Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label for="purchaseAmount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Purchase Amount ($)</label>
+                <input type="number" id="purchaseAmount" value="5000" class="mt-1 block w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-3 text-gray-800 dark:text-white">
+            </div>
+            <div>
+                <label for="payoffMonths" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payoff Time (Months)</label>
+                <input type="number" id="payoffMonths" value="24" class="mt-1 block w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-3 text-gray-800 dark:text-white">
+            </div>
+            <div>
+                <label for="apr" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Annual Rate (APR %)</label>
+                <input type="number" id="apr" value="21.5" step="0.1" class="mt-1 block w-full bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-3 text-gray-800 dark:text-white">
+            </div>
+        </div>
+
+        <!-- Calculate Button -->
+        <div class="text-center">
+            <button id="calculateBtn" class="w-full md:w-auto inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
+                Calculate & Graph
+            </button>
+        </div>
+        
+        <!-- Results and Graph Section -->
+        <div id="results" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-700 dark:text-gray-300">Monthly Payment:</h2>
+                    <p id="monthlyPayment" class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-1"></p>
+                    <p id="aprResultText" class="text-xs text-gray-500 dark:text-gray-400 mt-2"></p>
+                </div>
+                <div>
+                    <h2 class="text-lg font-medium text-gray-700 dark:text-gray-300">Total Interest Paid:</h2>
+                    <p id="totalInterest" class="text-3xl font-bold text-red-500 dark:text-red-400 mt-1"></p>
+                </div>
+            </div>
+            
+            <div>
+                <canvas id="payoffChart"></canvas>
+            </div>
+        </div>
+         <!-- Message Box -->
+        <div id="messageBox" class="hidden text-center bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg" role="alert">
+            <span class="block sm:inline" id="messageText"></span>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const calculateBtn = document.getElementById('calculateBtn');
+            const resultsDiv = document.getElementById('results');
+            const monthlyPaymentEl = document.getElementById('monthlyPayment');
+            const totalInterestEl = document.getElementById('totalInterest');
+            const purchaseAmountEl = document.getElementById('purchaseAmount');
+            const payoffMonthsEl = document.getElementById('payoffMonths');
+            const aprEl = document.getElementById('apr');
+            const aprResultTextEl = document.getElementById('aprResultText');
+            const messageBox = document.getElementById('messageBox');
+            const messageText = document.getElementById('messageText');
+
+            let payoffChart = null; // To hold the chart instance
+
+            // --- Event Listener ---
+            calculateBtn.addEventListener('click', () => {
+                const P = parseFloat(purchaseAmountEl.value); // Principal amount
+                const n = parseInt(payoffMonthsEl.value);     // Number of months (payments)
+                const apr = parseFloat(aprEl.value);          // Annual Percentage Rate from user
+                
+                // --- Input Validation ---
+                if (isNaN(P) || P <= 0 || isNaN(n) || n <= 0 || isNaN(apr) || apr < 0) {
+                    showMessage("Please enter valid positive numbers for all fields.");
+                    resultsDiv.classList.add('hidden');
+                    return;
+                }
+                hideMessage();
+
+                // --- Calculation ---
+                const annualRate = apr / 100;
+                const r = annualRate / 12;
+                
+                let monthlyPayment;
+                if (r === 0) {
+                    monthlyPayment = P / n;
+                } else {
+                    monthlyPayment = P * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                }
+
+                // --- Generate Data for the Graph ---
+                let balance = P;
+                let cumulativeInterest = 0;
+                const balanceData = [P];
+                const interestData = [0]; 
+                const labels = ['Start'];
+
+                for (let i = 1; i <= n; i++) {
+                    const interestPaid = balance * r;
+                    cumulativeInterest += interestPaid;
+                    interestData.push(cumulativeInterest);
+
+                    const principalPaid = monthlyPayment - interestPaid;
+                    balance -= principalPaid;
+                    
+                    balanceData.push(balance > 0 ? balance : 0); 
+                    labels.push(`Month ${i}`);
+                }
+
+                // --- Display Results ---
+                monthlyPaymentEl.textContent = `$${monthlyPayment.toFixed(2)}`;
+                totalInterestEl.textContent = `$${cumulativeInterest.toFixed(2)}`;
+                aprResultTextEl.textContent = `Based on a ${apr.toFixed(2)}% APR`;
+                resultsDiv.classList.remove('hidden');
+
+                // --- Render the Graph ---
+                renderChart(labels, balanceData, interestData);
+            });
+
+            /**
+             * Renders or updates the chart with two Y-axes.
+             * @param {string[]} labels - The labels for the X-axis.
+             * @param {number[]} balanceData - The data for the balance line chart.
+             * @param {number[]} interestData - The data for the cumulative interest bar chart.
+             */
+            function renderChart(labels, balanceData, interestData) {
+                const ctx = document.getElementById('payoffChart').getContext('2d');
+                
+                if (payoffChart) {
+                    payoffChart.destroy();
+                }
+
+                // Function to format large numbers for axis labels, rounding to the nearest whole number
+                const formatAxisLabel = (value) => {
+                    if (value >= 1e6) return '$' + (value / 1e6).toFixed(0) + 'M';
+                    if (value >= 1e3) return '$' + (value / 1e3).toFixed(0) + 'k';
+                    return '$' + value;
+                };
+
+                payoffChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                        {
+                            type: 'line',
+                            label: 'Remaining Balance ($)',
+                            data: balanceData,
+                            borderColor: 'rgba(79, 70, 229, 1)',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.1,
+                            yAxisID: 'y',
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Total Interest Paid ($)',
+                            data: interestData,
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y1',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            y: { // Left Y-Axis for Balance
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Remaining Balance ($)',
+                                    color: 'rgba(79, 70, 229, 1)'
+                                },
+                                ticks: {
+                                    callback: formatAxisLabel
+                                }
+                            },
+                            y1: { // Right Y-Axis for Interest
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Total Interest Paid ($)',
+                                    color: 'rgba(255, 99, 132, 1)'
+                                },
+                                ticks: {
+                                    callback: formatAxisLabel
+                                },
+                                grid: {
+                                    drawOnChartArea: false, 
+                                },
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function showMessage(message) {
+                messageText.textContent = message;
+                messageBox.classList.remove('hidden');
+            }
+
+            function hideMessage() {
+                messageBox.classList.add('hidden');
+            }
+        });
+    </script>
+
+</body>
+</html>
